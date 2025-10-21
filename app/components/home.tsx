@@ -5,8 +5,8 @@ import styles from "./home.module.scss";
 import { Sidebar } from "./sidebar";
 import { Chat } from "./chat";
 import { Settings } from "./settings";
-import { createVideoTask, waitForTask } from "@/app/services/video-generation";
-import { ArkConfig } from "@/app/config/volcengine";
+import { providerManager } from "@/app/services/provider-manager";
+import { VideoGenerationOptions } from "@/app/services/providers";
 
 interface Message {
   id: string;
@@ -152,19 +152,14 @@ export function Home() {
       );
 
       try {
-        // 从 localStorage 读取配置
-        const configStr = localStorage.getItem("ark_config");
-        if (!configStr) {
-          throw new Error("请先在设置中配置 API Key");
-        }
-
-        const config: ArkConfig = JSON.parse(configStr);
+        // 获取默认 Provider
+        const provider = providerManager.getDefaultProvider();
 
         // 提取视频描述（去掉"生成"、"视频"等关键词）
         let prompt = content
           .replace(/生成|创建|制作|一个|视频|动画/g, "")
           .trim();
-        
+
         // 如果没有提示词但有图片，使用默认提示词
         if (!prompt && (firstFrameUrl || lastFrameUrl)) {
           prompt = hasBothFrames ? "根据首尾帧生成流畅过渡视频" : "根据图片生成视频";
@@ -173,7 +168,17 @@ export function Home() {
         // 创建视频生成任务（传递首帧和尾帧）
         console.log('🎨 图生视频模式:', !!firstFrameUrl);
         console.log('🎨 首尾帧模式:', hasBothFrames);
-        const task = await createVideoTask(config, prompt, firstFrameUrl, lastFrameUrl);
+        console.log('🔌 使用 Provider:', provider.name);
+
+        const options: VideoGenerationOptions = {
+          prompt,
+          firstFrameUrl: firstFrameUrl || undefined,
+          lastFrameUrl: lastFrameUrl || undefined,
+          resolution: '1080p',
+          duration: 5,
+        };
+
+        const task = await provider.createTask(options);
 
         // 更新消息显示任务ID
         setChats((prevChats) =>
@@ -196,15 +201,15 @@ export function Home() {
         );
 
         // 等待任务完成
-        const result = await waitForTask(config, task.id, (taskStatus) => {
+        const result = await provider.waitForTask(task.id, (taskStatus) => {
           // 更新进度
-          const statusText = 
+          const statusText =
             taskStatus.status === "processing" || taskStatus.status === "running"
               ? "正在处理视频，请稍候..."
               : taskStatus.status === "pending"
               ? "等待处理..."
               : `状态: ${taskStatus.status}`;
-          
+
           setChats((prevChats) =>
             prevChats.map((chat) =>
               chat.id === currentChatId
@@ -225,7 +230,8 @@ export function Home() {
         });
 
         // 任务完成
-        if (result.status === "succeeded" && result.content?.video_url) {
+        if (result.status === "succeeded" && result.videoUrl) {
+          const metadata = result.metadata || {};
           setChats((prevChats) =>
             prevChats.map((chat) =>
               chat.id === currentChatId
@@ -235,8 +241,8 @@ export function Home() {
                       msg.id === aiMessageId
                         ? {
                             ...msg,
-                            content: `✅ 视频生成成功！\n\n分辨率: ${result.resolution}\n时长: ${result.duration}秒\n帧率: ${result.framespersecond}fps`,
-                            videoUrl: result.content?.video_url || "",
+                            content: `✅ 视频生成成功！\n\n分辨率: ${metadata.resolution || 'N/A'}\n时长: ${metadata.duration || 'N/A'}秒\n帧率: ${metadata.framespersecond || 'N/A'}fps`,
+                            videoUrl: result.videoUrl || "",
                             status: "succeeded",
                           }
                         : msg

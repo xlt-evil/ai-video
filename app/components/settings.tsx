@@ -9,6 +9,8 @@ import {
   defaultVolcengineConfig,
   validateVolcengineConfig,
 } from "../config/volcengine";
+import { providerManager, StoredProviderConfig } from "../services/provider-manager";
+import { ProviderType } from "../services/providers";
 
 interface SettingsProps {
   onClose: () => void;
@@ -20,11 +22,14 @@ export function Settings(props: SettingsProps) {
     apiKey: "",
   });
 
+  const [providers, setProviders] = useState<StoredProviderConfig[]>([]);
+  const [defaultProviderId, setDefaultProviderId] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
   const [saveStatus, setSaveStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
   const [errors, setErrors] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<"volcengine" | "providers">("volcengine");
 
   // 从 localStorage 加载配置
   useEffect(() => {
@@ -37,24 +42,51 @@ export function Settings(props: SettingsProps) {
         console.error("Failed to parse saved config:", e);
       }
     }
+
+    // 加载 Provider 列表
+    loadProviders();
   }, []);
+
+  const loadProviders = () => {
+    const providerList = providerManager.listProviders();
+    setProviders(providerList);
+
+    const defaultProvider = providerList.find(p => p.isDefault);
+    if (defaultProvider) {
+      setDefaultProviderId(defaultProvider.id);
+    }
+  };
 
   const handleSave = () => {
     // 验证配置
     const validation = validateVolcengineConfig(config);
-    
+
     if (!validation.valid) {
       setErrors(validation.errors);
       setSaveStatus("error");
       return;
     }
 
-    // 保存到 localStorage
+    // 保存到 localStorage（保持向后兼容）
     try {
       localStorage.setItem("ark_config", JSON.stringify(config));
+
+      // 同时添加到 Provider 管理器
+      try {
+        const existingProvider = providers.find(p => p.type === 'volcengine');
+        if (existingProvider) {
+          providerManager.updateProvider(existingProvider.id, config);
+        } else {
+          providerManager.addProvider('volcengine', config, 'Volcengine (火山引擎)', true);
+        }
+        loadProviders();
+      } catch (error) {
+        console.error("Failed to update provider:", error);
+      }
+
       setSaveStatus("success");
       setErrors([]);
-      
+
       setTimeout(() => {
         setSaveStatus("idle");
       }, 3000);
@@ -72,6 +104,32 @@ export function Settings(props: SettingsProps) {
     });
     setSaveStatus("idle");
     setErrors([]);
+  };
+
+  const handleSetDefaultProvider = (id: string) => {
+    try {
+      providerManager.setDefaultProvider(id);
+      setDefaultProviderId(id);
+      setSaveStatus("success");
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    } catch (error: any) {
+      setErrors([error.message]);
+      setSaveStatus("error");
+    }
+  };
+
+  const handleRemoveProvider = (id: string) => {
+    if (confirm("确定要删除这个 Provider 吗？")) {
+      try {
+        providerManager.removeProvider(id);
+        loadProviders();
+        setSaveStatus("success");
+        setTimeout(() => setSaveStatus("idle"), 3000);
+      } catch (error: any) {
+        setErrors([error.message]);
+        setSaveStatus("error");
+      }
+    }
   };
 
   const validation = validateVolcengineConfig(config);
@@ -416,6 +474,80 @@ export function Settings(props: SettingsProps) {
               min="0"
               max="10"
             />
+          </div>
+        </div>
+
+        {/* Provider 管理 */}
+        <div className={styles["settings-section"]}>
+          <div className={styles["section-title"]}>🔌 Provider 管理</div>
+          <div className={styles["section-description"]}>
+            管理多个视频生成平台的配置
+          </div>
+
+          {providers.length > 0 && (
+            <div style={{ marginBottom: "20px" }}>
+              <div style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "10px" }}>
+                已配置的 Provider：
+              </div>
+              {providers.map((provider) => (
+                <div
+                  key={provider.id}
+                  style={{
+                    padding: "10px",
+                    marginBottom: "8px",
+                    border: "1px solid var(--border-in-light)",
+                    borderRadius: "8px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: "bold" }}>{provider.name}</div>
+                    <div style={{ fontSize: "12px", color: "var(--text-light)" }}>
+                      类型: {provider.type}
+                      {provider.isDefault && " • 默认"}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    {!provider.isDefault && (
+                      <button
+                        onClick={() => handleSetDefaultProvider(provider.id)}
+                        style={{
+                          padding: "6px 12px",
+                          fontSize: "12px",
+                          border: "1px solid var(--primary)",
+                          borderRadius: "6px",
+                          backgroundColor: "transparent",
+                          color: "var(--primary)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        设为默认
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleRemoveProvider(provider.id)}
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: "12px",
+                        border: "1px solid var(--red)",
+                        borderRadius: "6px",
+                        backgroundColor: "transparent",
+                        color: "var(--red)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      删除
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ fontSize: "12px", color: "var(--text-light)", marginTop: "10px" }}>
+            💡 提示：保存火山引擎配置后，会自动添加到 Provider 列表中
           </div>
         </div>
       </div>
