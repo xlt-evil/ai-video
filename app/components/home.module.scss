@@ -1,0 +1,46 @@
+@import "../styles/animation.scss";
+
+.container {
+  background-color: var(--white);
+  border: var(--border-in-light);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  color: var(--black);
+  min-width: 600px;
+  min-height: 370px;
+  max-width: 1200px;
+  display: flex;
+  overflow: hidden;
+  box-sizing: border-box;
+  width: var(--window-width);
+  height: var(--window-height);
+}
+
+.window-content {
+  width: var(--window-content-width);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.tight-container {
+  width: 100vw;
+  height: var(--full-height);
+  max-width: 100vw;
+  max-height: var(--full-height);
+  border-radius: 0;
+  border: 0;
+}
+
+@media only screen and (max-width: 600px) {
+  .container {
+    min-height: unset;
+    min-width: unset;
+    max-height: unset;
+    border: 0;
+    border-radius: 0;
+    width: 100vw;
+    height: var(--full-height);
+  }
+}
+

@@ -1,0 +1,88 @@
+@import "../styles/animation.scss";
+
+.card {
+  background-color: var(--white);
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+  padding: 10px;
+}
+
+.list {
+  border: var(--border-in-light);
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+  margin-bottom: 20px;
+  animation: slide-in ease 0.3s;
+  background: var(--white);
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 40px;
+  border-bottom: var(--border-in-light);
+  padding: 10px 20px;
+  animation: slide-in ease 0.6s;
+
+  .list-header {
+    display: flex;
+    align-items: center;
+
+    .list-item-title {
+      font-size: 14px;
+      font-weight: bolder;
+    }
+
+    .list-item-sub-title {
+      font-size: 12px;
+      font-weight: normal;
+    }
+  }
+}
+
+.list .list-item:last-child {
+  border: 0;
+}
+
+.icon-button {
+  background-color: var(--white);
+  border: var(--border-in-light);
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+
+  &:hover {
+    background-color: var(--hover-color);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.primary-button {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+
+  &:hover {
+    filter: brightness(1.1);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
