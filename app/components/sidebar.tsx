@@ -25,8 +25,8 @@ export function Sidebar(props: SidebarProps) {
   return (
     <div className={styles.sidebar}>
       <div className={styles["sidebar-header"]}>
-        <div className={styles["sidebar-title"]}>NextChat Simple</div>
-        <div className={styles["sidebar-sub-title"]}>轻量级聊天界面</div>
+        <div className={styles["sidebar-title"]}>AIGC</div>
+        <div className={styles["sidebar-sub-title"]}>轻量级视频生成</div>
       </div>
 
       <div className={styles["sidebar-body"]}>

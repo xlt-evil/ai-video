@@ -27,37 +27,21 @@ interface ChatData {
 }
 
 // 模拟数据
-const mockChats: ChatData[] = [
-  {
-    id: "1",
-    title: "生成一个跑来跑去的视频",
-    date: "今天",
-    messages: [
-      {
-        id: "1-1",
-        role: "assistant",
-        content: "你好！我是 AI 助手。这是一个简化的聊天界面，基于 NextChat 的 UI 设计。",
-        timestamp: Date.now(),
-      },
-      {
-        id: "1-2",
-        role: "user",
-        content: "生成一个跑来跑去的视频",
-        timestamp: Date.now(),
-      },
-      {
-        id: "1-3",
-        role: "assistant",
-        content: "这是一个模拟回复。你可以以这里集成真实的 AI API。",
-        timestamp: Date.now(),
-      },
-    ],
-  },
-];
+const mockChats: ChatData[] = [];
 
 export function Home() {
-  const [chats, setChats] = useState<ChatData[]>(mockChats);
-  const [currentChatId, setCurrentChatId] = useState<string>(mockChats[0].id);
+  // 初始化时创建一个默认对话
+  const getInitialChats = () => {
+    if (mockChats.length > 0) {
+      return mockChats;
+    }
+    // 如果没有模拟数据，创建一个空对话列表
+    return [];
+  };
+
+  const initialChats = getInitialChats();
+  const [chats, setChats] = useState<ChatData[]>(initialChats);
+  const [currentChatId, setCurrentChatId] = useState<string>(initialChats.length > 0 ? initialChats[0].id : "");
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -252,7 +236,7 @@ export function Home() {
                         ? {
                             ...msg,
                             content: `✅ 视频生成成功！\n\n分辨率: ${result.resolution}\n时长: ${result.duration}秒\n帧率: ${result.framespersecond}fps`,
-                            videoUrl: result.content.video_url,
+                            videoUrl: result.content?.video_url || "",
                             status: "succeeded",
                           }
                         : msg
